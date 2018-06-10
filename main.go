@@ -12,6 +12,7 @@ import (
 	"syscall"
 
 	"github.com/DMarby/picsum-photos/api"
+	"github.com/DMarby/picsum-photos/image"
 	"github.com/DMarby/picsum-photos/queue"
 	"github.com/oklog/run"
 )
@@ -27,6 +28,16 @@ func handleInterrupt(ctx context.Context) error {
 	}
 }
 
+func getWorkerCount() int {
+	workers := runtime.NumCPU() - 1
+
+	if workers < 1 {
+		workers = 1
+	}
+
+	return workers
+}
+
 func main() {
 	var g run.Group
 
@@ -34,7 +45,7 @@ func main() {
 	defer cancel()
 
 	// Start worker queue
-	workerQueue := queue.New(ctx, runtime.NumCPU(), func(data interface{}) (interface{}, error) {
+	workerQueue := queue.New(ctx, getWorkerCount(), func(data interface{}) (interface{}, error) {
 		stringData := data.(string)
 		return stringData, nil
 	})
@@ -46,8 +57,15 @@ func main() {
 		cancel()
 	})
 
+	// Get imageProcessor instance
+	imageProcessor, err := image.GetInstance()
+	if err != nil {
+		cancel() // TODO: Verify that this works as expected
+		return
+	}
+
 	// Start and listen on http
-	api := api.New(workerQueue)
+	api := api.New(workerQueue, imageProcessor)
 	server := &http.Server{
 		Addr:    ":8080",
 		Handler: api.Router(),
@@ -63,8 +81,8 @@ func main() {
 	g.Add(func() error {
 		return handleInterrupt(ctx)
 	}, func(error) {
-		cancel()
+		imageProcessor.Shutdown()
 	})
 
-	log.Print(g.Run())
+	log.Print(g.Run().Error())
 }

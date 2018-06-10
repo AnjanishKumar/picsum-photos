@@ -10,7 +10,7 @@ import (
 	"io/ioutil"
 )
 
-func TestImage(t *testing.T) {
+func TestVips(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "vips")
 }

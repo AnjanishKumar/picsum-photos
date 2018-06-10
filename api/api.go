@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/DMarby/picsum-photos/image"
 	"github.com/DMarby/picsum-photos/queue"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -11,7 +12,8 @@ import (
 
 // API is a http api
 type API struct {
-	workerQueue *queue.Queue
+	workerQueue    *queue.Queue
+	imageProcessor *image.Processor
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
@@ -25,9 +27,10 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // New instantiates and returns a new api
-func New(workerQueue *queue.Queue) *API {
+func New(workerQueue *queue.Queue, imageProcessor *image.Processor) *API {
 	return &API{
-		workerQueue: workerQueue,
+		workerQueue:    workerQueue,
+		imageProcessor: imageProcessor,
 	}
 }
 
@@ -38,6 +41,8 @@ func (api *API) Router() http.Handler {
 	// Middleware
 	router.Use(middleware.Logger) // TODO: Use logrus?
 	router.Use(middleware.Recoverer)
+	// router.Use(middleware.RedirectSlashes) // TODO: Needed? Or just StripSlashes?
+	// TODO: Timeout?
 
 	// TODO: Healthcheck for LBs/autoscaling
 
@@ -56,6 +61,7 @@ func (api *API) Router() http.Handler {
 	// TODO: Either serve static pages for index/images, or let nginx take care of it
 	// TODO: Gzip everything, or let nginx handle that too
 	// TODO: Custom 404 handler for everything else?
+	// TODO: Graceful shutdown
 
 	return router
 }

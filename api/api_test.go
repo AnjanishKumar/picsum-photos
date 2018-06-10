@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 
 	"github.com/DMarby/picsum-photos/api"
+	"github.com/DMarby/picsum-photos/image"
 	"github.com/DMarby/picsum-photos/queue"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,7 +14,7 @@ import (
 	"testing"
 )
 
-func TestImage(t *testing.T) {
+func TestAPI(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "api")
 }
@@ -35,7 +36,9 @@ var _ = BeforeEach(func() {
 		return stringData, nil
 	})
 
-	router = api.New(workerQueue).Router()
+	imageProcessor, _ := image.GetInstance()
+
+	router = api.New(workerQueue, imageProcessor).Router()
 })
 
 // TODO: Disable logging for requests
